@@ -326,7 +326,7 @@ void loopMain() {
       if (mainMenu == mnuFAST) {
         digitalWrite(enablePin, currentENABLE);
         digitalWrite(directionPin, directionBACKWARD);
-        freqStair = 12000; // inicia rampa de velocidad
+        freqStair = 1000; // inicia rampa de velocidad
       }
       break;
     case btnLEFT:
@@ -334,7 +334,7 @@ void loopMain() {
       if (mainMenu == mnuFAST & digitalRead(endstopPin) == endstopFREE) {
         digitalWrite(enablePin, currentENABLE);
         digitalWrite(directionPin, directionFORWARD);
-        freqStair = 12000; // inicia rampa de velocidad
+        freqStair = 1000; // inicia rampa de velocidad
       }
       break;
     case btnNONE:
@@ -349,7 +349,7 @@ void loopMain() {
     case btnPRESSED:
       if (mainMenu == mnuFAST) {
         if (pressed_key == btnRIGHT) {
-          if (freqStair < 64000) {
+          if (freqStair < MAX_FREQ) {
             noTone(pulsePin);
             tone(pulsePin, freqStair);
             freqStair += 1000;
@@ -369,7 +369,7 @@ void loopMain() {
             printScreen();
           }
           else {
-            if (freqStair < 64000) {
+            if (freqStair < MAX_FREQ) {
               noTone(pulsePin);
               tone(pulsePin, freqStair);
               freqStair += 1000;
