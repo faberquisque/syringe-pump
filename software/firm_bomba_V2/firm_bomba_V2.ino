@@ -54,7 +54,6 @@ unsigned int frequency = 1727; // Hz
 // pulsos por mm (incertidumbre en la cuarta cifra)
 //unsigned long calibration = 21440;
 unsigned long calibration = 20358;
-
 // Calibracion: largo de la jeringa en micrones
 unsigned long syringeLength  = 58000;
 // Calibracion: volumen total de la jeringa en microlitros
@@ -64,6 +63,27 @@ unsigned long flowrate = 5000; // microlitros/hora
 // Volumen/Tiempo consigna - modo volume-time
 unsigned long totalVolume = 500; // microlitros
 unsigned long totalTime = 360; // segundos
+
+// Memory Locations
+const int calibrationMEMLOC = 0;
+const int syringeLengthMEMLOC = calibrationMEMLOC + sizeof(calibration);
+const int syringeVolumeMEMLOC = syringeLengthMEMLOC + sizeof(syringeLength);
+const int flowrateMEMLOC = syringeVolumeMEMLOC + sizeof(syringeVolume);
+const int totalVolumeMEMLOC = flowrateMEMLOC + sizeof(flowrate);
+const int totalTimeMEMLOC = totalVolumeMEMLOC + sizeof(totalVolume);
+
+// Lee la configuracion de la memoria EEPROM
+void readConfig(){
+  if (EEPROM.get(calibrationMEMLOC,calibration) != 0xFFFFFFFF)
+  {
+    EEPROM.get(calibrationMEMLOC, calibration);
+    EEPROM.get(syringeLengthMEMLOC, syringeLength);
+    EEPROM.get(syringeVolumeMEMLOC, syringeVolume);
+    EEPROM.get(flowrateMEMLOC, flowrate);
+    EEPROM.get(totalVolumeMEMLOC, totalVolume);
+    EEPROM.get(totalTimeMEMLOC, totalTime);
+  }
+}
 
 /* Calculo de la frecuencia
     Modo FlowRate:
@@ -215,9 +235,11 @@ bool flagEndstopSerial = false;
 bool flagNumberSteps = false;
 
 void setup() {
-  //
-  updateActualFlowRate()
-  updateLimits()
+  // Restablece la configuracion
+  readConfig();
+  // Actualiza los parametros calculados
+  updateActualFlowRate();
+  updateLimits();
   // inicia los pines de control del driver
   pinMode(pulsePin, OUTPUT);
   pinMode(directionPin, OUTPUT);

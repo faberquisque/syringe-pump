@@ -154,8 +154,9 @@ void loopValueFR() {
       // esta en FRFLOWRATE y pasa a FRPAUSE
       if (flowrate >= minFlowRate & flowrate <= maxFlowRate) {
         //se establece la nueva frecuencia
-        frequency = (float)flowrate * syringeLength * calibration / syringeVolume / 3600. / 1000.;
-        actualFlowrate = frequency * 1000. / calibration / syringeLength * syringeVolume * 3600.0;
+        frequency = flowRate2Frequency((float)flowrate);
+        updateActualFlowRate();
+        EEPROM.put(flowrateMEMLOC, flowrate);
         // se da mensaje de aceptacion
         lcd.setCursor(0, 0);
         lcd.print("FlowRateAcepted:");

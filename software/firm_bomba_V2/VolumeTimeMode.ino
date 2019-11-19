@@ -187,7 +187,7 @@ void loopValueVT() {
           lcd.print("L");
           delay(msgDELAY);
           // recalcula los limites
-          updateLimits()
+          updateLimits();
           screen = scrVTTIME;
           return;
           break;
@@ -196,7 +196,7 @@ void loopValueVT() {
           if (totalTime > minTotalTime & totalTime < maxTotalTime) {
             // Establece la nueva frecuencia
             frequency = flowRate2Frequency((float)totalVolume / (totalTime / 3600.0));
-            updateActualFlowRate()
+            updateActualFlowRate();
             //
             lcd.setCursor(0, 0);
             lcd.print("Time acepted:");
@@ -243,8 +243,14 @@ void loopValueVT() {
     auxValue = oldValue;
 
   switch (screen) {
-    case scrVTVOLUME: totalVolume = auxValue; break;
-    case scrVTTIME: totalTime = auxValue; break;
+    case scrVTVOLUME: 
+      totalVolume = auxValue; 
+      EEPROM.put(totalVolumeMEMLOC, totalVolume);
+      break;
+    case scrVTTIME: 
+      totalTime = auxValue; 
+      EEPROM.put(totalTimeMEMLOC, totalTime);
+      break;
   }
 }
 

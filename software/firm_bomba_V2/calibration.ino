@@ -67,8 +67,14 @@ void loopCal() {
     auxValue = oldValue;
 
   switch (screen) {
-    case scrCALLENGTH: syringeLength = auxValue; break;
-    case scrCALVOLUME: syringeVolume = auxValue; break;
+    case scrCALLENGTH: 
+      syringeLength = auxValue; 
+      EEPROM.put(syringeLengthMEMLOC, syringeLength);
+      break;
+    case scrCALVOLUME: 
+      syringeVolume = auxValue; 
+      EEPROM.put(syringeVolumeMEMLOC, syringeVolume);
+      break;
   }
 }
 

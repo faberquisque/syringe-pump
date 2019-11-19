@@ -1,5 +1,6 @@
 {
     "board": "arduino:avr:mega",
     "configuration": "cpu=atmega2560",
-    "sketch": "software\\firm_bomba_V2\\firm_bomba_V2.ino"
+    "sketch": "software\\firm_bomba_V2\\firm_bomba_V2.ino",
+    "port": "COM1"
 }
