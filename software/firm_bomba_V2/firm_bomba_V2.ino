@@ -24,6 +24,8 @@ char firm[] = "Firm V2.0 251018";
    Esto resulta util a los fines de calibrar el
    conjunto motor-reductor-eje-carro.
 */
+// Libreria para el manejo de la memoria EEPROM
+#include <EEPROM.h>
 // Libreria para el manejo de la pantalla
 #include <LiquidCrystal.h>
 LiquidCrystal lcd(8, 9, 4, 5, 6, 7);
@@ -53,10 +55,6 @@ unsigned int frequency = 1727; // Hz
 //unsigned long calibration = 21440;
 unsigned long calibration = 20358;
 
-//This software has been developed by Emanuel Elizalde
-//---------------------------------------------------------
-// Variables consignas del usuario
-//---------------------------------------------------------
 // Calibracion: largo de la jeringa en micrones
 unsigned long syringeLength  = 58000;
 // Calibracion: volumen total de la jeringa en microlitros
@@ -79,14 +77,27 @@ unsigned long totalTime = 360; // segundos
       frequency = velocity*calibration/1000
       flowrate=totalVolume/totalTime
 */
-float minFlowRate = MIN_FREQ * 1000. / calibration * 3600.*syringeVolume / syringeLength;
-// minFlowRate 89 microlitros / hora
-float maxFlowRate = MAX_FREQ * 1000. / calibration * 3600.*syringeVolume / syringeLength;
-// maxFlowRate 28950 microlitros / hora
-float minTotalTime = totalVolume / maxFlowRate * 3600;
-// minTotalTime 62 seg  (500 microlitros)
-float maxTotalTime = totalVolume / minFlowRate * 3600;
-// maxTotalTime 20224 seg (500 microlitros)
+
+float frequency2FlowRate(unsigned int value){
+  return (float)(value * 1000.0 / calibration / syringeLength * syringeVolume * 3600.0);
+}
+
+unsigned int flowRate2Frequency(float value){
+  return (unsigned int)(value / 1000. * calibration * syringeLength / syringeVolume / 3600.0);
+}
+
+// limites de caudal en base a los limites de frecuencia
+float minFlowRate;
+float maxFlowRate;
+float minTotalTime;
+float maxTotalTime;
+
+void updateLimits(){
+  float minFlowRate = frequency2FlowRate(MIN_FREQ);
+  float maxFlowRate = frequency2FlowRate(MAX_FREQ);
+  float minTotalTime = totalVolume / maxFlowRate * 3600;
+  float maxTotalTime = totalVolume / minFlowRate * 3600;
+}
 
 //---------------------------------------------------------
 // Valores reales y contadores de operacion
@@ -96,8 +107,15 @@ float maxTotalTime = totalVolume / minFlowRate * 3600;
     Por este redondeo las variables reales van a diferir
     levemente de las consignas.
 */
-float actualFlowrate = frequency * 1000. / calibration / syringeLength * syringeVolume * 3600.0;
-float actualTotalTime = totalVolume / actualFlowrate;
+
+float actualFlowrate; // = frequency * 1000. / calibration / syringeLength * syringeVolume * 3600.0;
+float actualTotalTime; // = totalVolume / actualFlowrate;
+
+void updateActualFlowRate(){
+  actualFlowrate = frequency2FlowRate(frequency);
+  actualTotalTime = totalVolume / actualFlowrate;
+}
+
 // Volumen/Tiempo acumulados en el modo VT
 float progressVolume = 0; // microlitros
 float progressTime = 0; // segundos
@@ -197,6 +215,9 @@ bool flagEndstopSerial = false;
 bool flagNumberSteps = false;
 
 void setup() {
+  //
+  updateActualFlowRate()
+  updateLimits()
   // inicia los pines de control del driver
   pinMode(pulsePin, OUTPUT);
   pinMode(directionPin, OUTPUT);

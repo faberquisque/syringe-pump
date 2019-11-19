@@ -117,14 +117,14 @@ void loopValueFreq() {
       if (frequency > MAX_FREQ or frequency < MIN_FREQ)
         frequency = oldValue;
       tone(pulsePin, frequency);
-      actualFlowrate = frequency * 1000. / calibration / syringeLength * syringeVolume * 3600.0;
+      updateActualFlowRate();
       break;
     case btnDOWN:
       frequency -= quanto;
       if (frequency > MAX_FREQ or frequency < MIN_FREQ)
         frequency = oldValue;
       tone(pulsePin, frequency);
-      actualFlowrate = frequency * 1000. / calibration / syringeLength * syringeVolume * 3600.0;
+      updateActualFlowRate();
       break;
   }
 }

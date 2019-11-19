@@ -187,8 +187,7 @@ void loopValueVT() {
           lcd.print("L");
           delay(msgDELAY);
           // recalcula los limites
-          minTotalTime = (float) totalVolume / maxFlowRate * 3600.;
-          maxTotalTime = (float) totalVolume / minFlowRate * 3600.;
+          updateLimits()
           screen = scrVTTIME;
           return;
           break;
@@ -196,9 +195,8 @@ void loopValueVT() {
         case scrVTTIME:
           if (totalTime > minTotalTime & totalTime < maxTotalTime) {
             // Establece la nueva frecuencia
-            frequency = (float)totalVolume * syringeLength / syringeVolume / totalTime * calibration / 1000;
-            actualFlowrate = frequency * 1000. / calibration / syringeLength * syringeVolume * 3600.0;
-            actualTotalTime = totalVolume / actualFlowrate;
+            frequency = flowRate2Frequency((float)totalVolume / (totalTime / 3600.0));
+            updateActualFlowRate()
             //
             lcd.setCursor(0, 0);
             lcd.print("Time acepted:");
