@@ -34,6 +34,7 @@ void loopSerial() {
       // ejecuta los pasos
       for (int i = 0; i < a; i++) {
         digitalWrite(pulsePin, LOW);
+        delayMicroseconds(delaySTEPSSERIAL);
         digitalWrite(pulsePin, HIGH);
         delayMicroseconds(delaySTEPSSERIAL);
         // comprueba que no se alcanze el final de carrera
@@ -44,17 +45,34 @@ void loopSerial() {
       Serial.print(a);
       Serial.println(" steps executed");
     }
+    // si llego algo distinto a 0
+    // y el mensaje anterior fue "10" (New Calibration)
+    else if (a > 0 && flagNewCalibration){
+      flagNewCalibration = false;
+      calibration = a;
+      EEPROM.put(calibrationMEMLOC, calibration);
+      // da a aviso de la nueva calibracion
+      Serial.println("New Calibration: ");
+      Serial.print(a);
+    }
     // si el flag no esta levantado y a>30, 
     // entonces a se interpreta como una nueva frecuencia
     else if (a > 30) {
-      tone(pulsePin, a);
-      
-      lcd.setCursor(0, 1);
-      lcd.print(a);
-      lcd.print(" Hz          ");
-      Serial.print("New frequency established: ");
-      Serial.print(a);
-      Serial.println(" Hz");
+      if (a > MAX_FREQ){
+        lcd.setCursor(0, 1);
+        lcd.print("Invalid frequency: ");
+        Serial.print("Invalid frequency: ");
+        Serial.print(a);
+      }
+      else {
+        tone(pulsePin, a);
+        lcd.setCursor(0, 1);
+        lcd.print(a);
+        lcd.print(" Hz          ");
+        Serial.print("New frequency established: ");
+        Serial.print(a);
+        Serial.println(" Hz");
+      }
     }
     // los valores menores a 30 tienen significado especial
     else {
@@ -92,7 +110,7 @@ void loopSerial() {
         case 6:
           lcd.setCursor(0, 1);
           lcd.print("6 Steps: listen");
-          Serial.println("Listening number of steps");
+          Serial.println("Listening number of steps...");
           noTone(pulsePin);
           flagNumberSteps = true;
           break;
@@ -112,6 +130,13 @@ void loopSerial() {
           Serial.println("pong");
           lcd.setCursor(0, 1);
           lcd.print("9 Ping");
+          break;
+        case 10:
+          lcd.setCursor(0, 1);
+          lcd.print("10 New Cal");
+          Serial.println("Listening Calibration number...");
+          noTone(pulsePin);
+          flagNewCalibration = true;
           break;
       }
     }

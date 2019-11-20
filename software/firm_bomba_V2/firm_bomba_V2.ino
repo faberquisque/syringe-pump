@@ -230,9 +230,10 @@ unsigned long millisStartRuninng;
 //---------------------------------------------------------
 // Variables para el modo Serial
 //---------------------------------------------------------
-#define delaySTEPSSERIAL 20
+#define delaySTEPSSERIAL 25
 bool flagEndstopSerial = false;
 bool flagNumberSteps = false;
+bool flagNewCalibration = false;
 
 void setup() {
   // Restablece la configuracion

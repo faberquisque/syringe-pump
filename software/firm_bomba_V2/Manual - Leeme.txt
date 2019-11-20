@@ -322,7 +322,7 @@ En el modo serial se envian mensajes desde una PC a fin de controlar la bomba.
 A fin de ofrecer versatilidad en el control las operaciones son de bajo nivel.
 
 Los comandos son números enteros 0<N<65535.
-El comando 6 es especial ya que es el unico que requiere un parámetro.
+El comando 6 y 10 son especiales ya que requiere un parámetro adicional.
 
 
 Comando	(input)	Leyenda LCD			Respuesta Serial 
@@ -338,6 +338,7 @@ Comando	(input)	Leyenda LCD			Respuesta Serial
 "8"				8 Report			Firmware:
 									Firm V2.0 221018
 "9"				9 Ping				pong
+"10"			10 New Cal			Set new Calibration parameter
 N>30			N Hz				New frequency established: N Hz
 N after "6"		6 Step: N			N steps executed
 				- EndstopReached	Aborted Endstop Reached
