@@ -51,18 +51,18 @@ unsigned int frequency = 1727; // Hz
 // Medido experimentalmente con regla/calibre 21440+/-10
 // pulsos por mm (incertidumbre en la cuarta cifra)
 //unsigned long calibration = 21440;
-unsigned long calibration = 21610;
+unsigned long calibration = 20381;
 
 //This software has been developed by Emanuel Elizalde
 //---------------------------------------------------------
 // Variables consignas del usuario
 //---------------------------------------------------------
 // Calibracion: largo de la jeringa en micrones
-unsigned long syringeLength  = 15860;
+unsigned long syringeLength  = 45252;
 // Calibracion: volumen total de la jeringa en microlitros
-unsigned long syringeVolume =  1000;
+unsigned long syringeVolume =  3000;
 // Caudal consigna - modo flowrate
-unsigned long flowrate = 5000; // microlitros/hora
+unsigned long flowrate = 2000; // microlitros/hora
 // Volumen/Tiempo consigna - modo volume-time
 unsigned long totalVolume = 63; // microlitros
 unsigned long totalTime = 45; // segundos
