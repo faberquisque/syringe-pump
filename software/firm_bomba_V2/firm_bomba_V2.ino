@@ -51,7 +51,7 @@ unsigned int frequency = 1727; // Hz
 // Medido experimentalmente con regla/calibre 21440+/-10
 // pulsos por mm (incertidumbre en la cuarta cifra)
 //unsigned long calibration = 21440;
-unsigned long calibration = 20381;
+unsigned long calibration = 21374;
 
 //This software has been developed by Emanuel Elizalde
 //---------------------------------------------------------
