@@ -1,6 +1,6 @@
 /*  Firmware V2 de la bomba de jeringa  */
 /*-------------0123456789012345*/
-char firm[] = "Firm V2.0 251018";
+char firm[] = "Firm V2.0 20-11-2019";
 /*
    Historial:
 
@@ -35,12 +35,11 @@ LiquidCrystal lcd(8, 9, 4, 5, 6, 7);
 // Variables internas para manejar el motor
 //---------------------------------------------------------
 // Frecuencia de la onda cuadrada, funcion tone()
-unsigned int frequency = 1727; // Hz
+unsigned long frequency = 1727; // Hz
 // minimo debido al metodo de generacion
 #define MIN_FREQ 31
 // maxima velocidad para que no patine el motor
-//#define MAX_FREQ 12500
-#define MAX_FREQ 25000
+#define MAX_FREQ 12500
 
 /* Calibracion entre pulsos y avance del carro
    1 periodo / 1 pulso
@@ -98,25 +97,25 @@ void readConfig(){
       flowrate=totalVolume/totalTime
 */
 
-float frequency2FlowRate(unsigned int value){
-  return (float)(value * 1000.0 / calibration / syringeLength * syringeVolume * 3600.0);
+float frequency2FlowRate(unsigned long value){
+  return (float)((float)value / calibration / syringeLength * syringeVolume * 3600.0 * 1000.0);
 }
 
-unsigned int flowRate2Frequency(float value){
-  return (unsigned int)(value / 1000. * calibration * syringeLength / syringeVolume / 3600.0);
+unsigned long flowRate2Frequency(float value){
+  return (unsigned long)(value * calibration * syringeLength / syringeVolume / 3600.0 / 1000.0);
 }
 
 // limites de caudal en base a los limites de frecuencia
-float minFlowRate;
-float maxFlowRate;
-float minTotalTime;
-float maxTotalTime;
+float minFlowRate = 0.0;
+float maxFlowRate = 10000.0;
+float minTotalTime = 0.0;
+float maxTotalTime = 10000.0;
 
 void updateLimits(){
-  float minFlowRate = frequency2FlowRate(MIN_FREQ);
-  float maxFlowRate = frequency2FlowRate(MAX_FREQ);
-  float minTotalTime = totalVolume / maxFlowRate * 3600;
-  float maxTotalTime = totalVolume / minFlowRate * 3600;
+  minFlowRate = frequency2FlowRate(MIN_FREQ);
+  maxFlowRate = frequency2FlowRate(MAX_FREQ);
+  minTotalTime = totalVolume / maxFlowRate * 3600.0;
+  maxTotalTime = totalVolume / minFlowRate * 3600.0;
 }
 
 //---------------------------------------------------------
@@ -249,7 +248,6 @@ void setup() {
   pinMode(endstopPin, INPUT);
   // apaga la corriente al motor
   digitalWrite(enablePin, currentDISABLE);
-
   // Inicializar el LCD
   lcd.begin(16, 2);
   lcd.setCursor(0, 0);

@@ -51,6 +51,7 @@ void loopSerial() {
       flagNewCalibration = false;
       calibration = a;
       EEPROM.put(calibrationMEMLOC, calibration);
+      updateLimits();
       // da a aviso de la nueva calibracion
       Serial.println("New Calibration: ");
       Serial.print(a);
@@ -117,8 +118,26 @@ void loopSerial() {
         case 7:
           lcd.setCursor(0, 1);
           lcd.print("7 Return Cal");
-          Serial.println("Calibration (periods/mm):");
+          Serial.println("Calibration (periods/mm): ");
           Serial.println(calibration);
+          Serial.println("Syringe Length (micrometer): ");
+          Serial.println(syringeLength);
+          Serial.println("Syringe Volume (microliter): ");
+          Serial.println(syringeVolume);
+          Serial.println("Flowrate (microliter/hour): ");
+          Serial.println(flowrate);
+          Serial.println("Total Volume (microliter): ");
+          Serial.println(totalVolume);
+          Serial.println("Total Time (seconds): ");
+          Serial.println(totalTime);
+          Serial.println("Minimum Flowrate (microliter/hour): ");
+          Serial.println(minFlowRate); 
+          Serial.println("Maximum Flowrate (microliter/hour): ");
+          Serial.println(maxFlowRate);
+          Serial.println("Minimum Total Time (seconds): ");
+          Serial.println(minTotalTime);
+          Serial.println("Maximum Total Time (seconds): ");
+          Serial.println(maxTotalTime);
           break;
         case 8:
           lcd.setCursor(0, 1);

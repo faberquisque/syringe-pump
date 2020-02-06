@@ -43,7 +43,6 @@ void loopCal() {
           lcd.setCursor(0, 0);
           lcd.print("Volume Selected");
           delay(msgDELAY);
-          updateLimits();
           screen = scrMAIN;
           break;
       }
@@ -70,10 +69,12 @@ void loopCal() {
     case scrCALLENGTH: 
       syringeLength = auxValue; 
       EEPROM.put(syringeLengthMEMLOC, syringeLength);
+      updateLimits();
       break;
     case scrCALVOLUME: 
       syringeVolume = auxValue; 
       EEPROM.put(syringeVolumeMEMLOC, syringeVolume);
+      updateLimits();
       break;
   }
 }

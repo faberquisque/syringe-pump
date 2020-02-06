@@ -195,7 +195,7 @@ void loopValueVT() {
         case scrVTTIME:
           if (totalTime > minTotalTime & totalTime < maxTotalTime) {
             // Establece la nueva frecuencia
-            frequency = flowRate2Frequency((float)totalVolume / (totalTime / 3600.0));
+            frequency = flowRate2Frequency((float)totalVolume / ((float)totalTime / 3600.0));
             updateActualFlowRate();
             //
             lcd.setCursor(0, 0);
