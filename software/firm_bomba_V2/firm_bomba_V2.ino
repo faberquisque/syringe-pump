@@ -264,6 +264,8 @@ void setup() {
 }
 
 void loop() {
+  /* control por fin de carrera */
+  checkEndstop();
   read_LCD_buttons();
   switch (screen) {
     case scrMAIN:
@@ -485,13 +487,45 @@ void printMain() {
 
 void checkEndstop() {
   if (digitalRead(endstopPin) == endstopPRESSED) {
-    noTone(pulsePin);
-    digitalWrite(enablePin, currentDISABLE);
+    stopPump();
     screen = scrENDSTOP;
-    lcd.noBlink();
-    screenRotation = 0;
-    flagClearScreen = true;
-    millisStartScreen = millis();
+    // lcd.noBlink(); //mepa que no hace nada
     printScreen();
+  }
+}
+void startPump(){
+  // comandos para iniciar operacion
+  // seleccionar direccion
+  digitalWrite(directionPin, directionFORWARD);
+  // enciende el oscilador
+  tone(pulsePin, frequency);
+  // habilita la corriente
+  digitalWrite(enablePin, currentENABLE);
+  // iniciar contador de tiempo
+  millisStartRuninng = millis();
+  millisStartScreen = millis();
+  flagProgressScreen = true;
+  switch(screen){
+    case scrFRPAUSE:
+      screen = scrFRRUNNING;
+      break;
+    case scrVTPAUSE:
+      screen = scrVTRUNNING;
+      break;
+  }
+}
+void stopPump(){
+  noTone(pulsePin);
+  digitalWrite(enablePin, currentDISABLE);
+  millisStartScreen = millis();
+  flagProgressScreen = true;
+  screenRotation = 0;
+  switch(screen){
+    case scrVTRUNNING:
+      screen = scrVTSTOP;
+      break;
+    case scrFRRUNNING:
+      screen = scrMAIN;
+      break;
   }
 }

@@ -26,18 +26,8 @@ void loopFR() {
           screen = scrMAIN;
           break;
         case btnRIGHT:
-          // comandos para iniciar operacion
-          // seleccionar direccion
-          digitalWrite(directionPin, directionFORWARD);
-          // enciende el oscilador
-          tone(pulsePin, frequency);
-          // habilita la corriente
-          digitalWrite(enablePin, currentENABLE);
-          // iniciar contador de tiempo
-          millisStartRuninng = millis();
+          startPump();
           screen = scrFRRUNNING;
-          flagProgressScreen = true;
-          millisStartScreen = millis();
           break;
       }
       break;
@@ -53,10 +43,7 @@ void loopFR() {
       //
       switch (lcd_key) {
         case btnSELECT:
-          // detiene el motor: apaga el oscilador y apaga la corriente
-          noTone(pulsePin);
-          digitalWrite(enablePin, currentDISABLE);
-          // mensaje de salida
+          stopPump();
           lcd.clear();
           lcd.setCursor(0, 0);
           lcd.print("      FLOW      ");
@@ -64,7 +51,6 @@ void loopFR() {
           lcd.print("    STOPPED     ");
           delay(msgDELAY);
           // cambio de pantalla
-          screen = scrMAIN;
           break;
         case btnRIGHT:
           screen = scrFRFREQ;

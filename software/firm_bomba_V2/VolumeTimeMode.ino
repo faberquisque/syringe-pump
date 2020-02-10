@@ -22,47 +22,23 @@ void loopVT() {
           flagClearScreen = true;
           break;
         case btnRIGHT:
-          // comandos para iniciar operacion
-          // seleccionar direccion
-          digitalWrite(directionPin, directionFORWARD);
-          // enciende el oscilador
-          tone(pulsePin, frequency);
-          // habilita la corriente
-          digitalWrite(enablePin, currentENABLE);
-          // iniciar contador de tiempo
-          millisStartRuninng = millis();
-          screen = scrVTRUNNING;
-          flagProgressScreen = true;
-          millisStartScreen = millis();
+          startPump();
           break;
       }
       break;
     case scrVTRUNNING:
       loopVTScreenRefresh();
-      /* control por fin de carrera */
-      checkEndstop();
+      
       // refrescar valores de tiempo y volumen
       progressTime = (millis() - millisStartRuninng) / 1000.0;
       progressVolume = progressTime / totalTime * totalVolume;
       if (progressTime > totalTime) {
-        // procedimiento de detencion
-        noTone(pulsePin);
-        digitalWrite(enablePin, currentDISABLE);
+        stopPump();
         screen = scrVTEND;
-        flagProgressScreen = true;
-        millisStartScreen = millis();
       }
       switch (lcd_key) {
         case btnSELECT:
-          // comandos para detener
-          // apaga el oscilador
-          noTone(pulsePin);
-          // apaga la corriente
-          digitalWrite(enablePin, currentDISABLE);
-
-          screen = scrVTSTOP;
-          flagProgressScreen = true;
-          millisStartScreen = millis();
+          stopPump();
           break;
       }
       break;
