@@ -26,14 +26,33 @@ void loopFR() {
           screen = scrMAIN;
           break;
         case btnRIGHT:
+          digitalWrite(transmitterPin, messageSTART);
           startPump();
           screen = scrFRRUNNING;
           break;
+      }
+      if(digitalRead(receiverPin) == messageSTART){
+        isSlave = true;
+        startPump();
+        screen = scrFRRUNNING;
       }
       break;
     case scrFRRUNNING:
       /* control por fin de carrera */
       checkEndstop();
+      if(digitalRead(receiverPin) == messageSTOP && isSlave){
+        stopPump();
+        isSlave = false; //slavery finished        
+        lcd.clear();
+        lcd.setCursor(0, 0);
+        lcd.print("      FLOW      ");
+        lcd.setCursor(0, 1);
+        lcd.print("    STOPPED     ");
+        delay(msgDELAY);
+        // cambio de pantalla
+        screen = scrMAIN;
+        break;
+      }
       if ((millis() - millisStartScreen) > screenCHANGE) {
         millisStartScreen = millis();
         //rota la pantalla entre tres valores
@@ -43,6 +62,7 @@ void loopFR() {
       //
       switch (lcd_key) {
         case btnSELECT:
+          digitalWrite(transmitterPin, messageSTOP);
           stopPump();
           lcd.clear();
           lcd.setCursor(0, 0);
@@ -51,6 +71,7 @@ void loopFR() {
           lcd.print("    STOPPED     ");
           delay(msgDELAY);
           // cambio de pantalla
+          screen = scrMAIN;
           break;
         case btnRIGHT:
           screen = scrFRFREQ;
@@ -61,6 +82,19 @@ void loopFR() {
     case scrFRFREQ:
       /* control por fin de carrera */
       checkEndstop();
+      if(digitalRead(receiverPin) == messageSTOP && isSlave){
+        stopPump();
+        isSlave = false; //slavery finished        
+        lcd.clear();
+        lcd.setCursor(0, 0);
+        lcd.print("      FLOW      ");
+        lcd.setCursor(0, 1);
+        lcd.print("    STOPPED     ");
+        delay(msgDELAY);
+        // cambio de pantalla
+        screen = scrMAIN;
+        break;
+      }
       loopValueFreq();
       break;
   }
@@ -152,9 +186,11 @@ void loopValueFR() {
         lcd.write(228);
         lcd.print("L/h");
         delay(msgDELAY);
-        screen = scrFRPAUSE;
         screenRotation = 0;
         millisStartScreen = millis();
+        // empieza a escuchar la orden de la otra bomba
+//        beginListeningStart();
+        screen = scrFRPAUSE;
       }
       else {
         lcd.setCursor(0, 0);

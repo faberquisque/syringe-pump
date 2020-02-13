@@ -226,6 +226,16 @@ unsigned int freqStair;
 // Variable que cuenta el tiempo desde el RUN
 unsigned long millisStartRuninng;
 
+
+//---------------------------------------------------------
+// Comunicacion entre bombas
+//---------------------------------------------------------
+const int transmitterPin = 50;   // TX 
+const int receiverPin = 52;      // RX
+bool isSlave = false;
+#define messageSTART LOW
+#define messageSTOP HIGH
+
 //---------------------------------------------------------
 // Variables para el modo Serial
 //---------------------------------------------------------
@@ -248,6 +258,12 @@ void setup() {
   pinMode(endstopPin, INPUT);
   // apaga la corriente al motor
   digitalWrite(enablePin, currentDISABLE);
+
+  //inicia los pines de comunicacion entre bombas
+  pinMode(transmitterPin, OUTPUT);
+  pinMode(receiverPin, INPUT_PULLUP);
+  digitalWrite(transmitterPin, messageSTOP);
+
   // Inicializar el LCD
   lcd.begin(16, 2);
   lcd.setCursor(0, 0);
@@ -264,8 +280,6 @@ void setup() {
 }
 
 void loop() {
-  /* control por fin de carrera */
-  checkEndstop();
   read_LCD_buttons();
   switch (screen) {
     case scrMAIN:
@@ -488,9 +502,9 @@ void printMain() {
 void checkEndstop() {
   if (digitalRead(endstopPin) == endstopPRESSED) {
     stopPump();
+    digitalWrite(transmitterPin, messageSTOP);
     screen = scrENDSTOP;
-    // lcd.noBlink(); //mepa que no hace nada
-    printScreen();
+    lcd.noBlink();
   }
 }
 void startPump(){
@@ -505,27 +519,28 @@ void startPump(){
   millisStartRuninng = millis();
   millisStartScreen = millis();
   flagProgressScreen = true;
-  switch(screen){
-    case scrFRPAUSE:
-      screen = scrFRRUNNING;
-      break;
-    case scrVTPAUSE:
-      screen = scrVTRUNNING;
-      break;
-  }
 }
+
 void stopPump(){
   noTone(pulsePin);
   digitalWrite(enablePin, currentDISABLE);
   millisStartScreen = millis();
   flagProgressScreen = true;
   screenRotation = 0;
-  switch(screen){
-    case scrVTRUNNING:
-      screen = scrVTSTOP;
-      break;
-    case scrFRRUNNING:
-      screen = scrMAIN;
-      break;
-  }
 }
+
+// void Message(){
+//   lcd_key = btnMESSAGE;
+// }
+
+// void beginListeningStart(){
+//   attachInterrupt(digitalPinToInterrupt(receiverPin), Message, messageSTART);
+// }
+
+// void beginListentingStop(){
+//   attachInterrupt(digitalPinToInterrupt(receiverPin), Message, messageSTOP);
+// }
+
+// void stopListening(){
+//   detachInterrupt(digitalPinToInterrupt(receiverPin));
+// }

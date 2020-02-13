@@ -22,23 +22,39 @@ void loopVT() {
           flagClearScreen = true;
           break;
         case btnRIGHT:
+          digitalWrite(transmitterPin, messageSTART);
           startPump();
+          screen = scrVTRUNNING;
           break;
+      }
+      if(digitalRead(receiverPin) == messageSTART){
+        isSlave = true;
+        startPump();
+        screen = scrVTRUNNING;
       }
       break;
     case scrVTRUNNING:
       loopVTScreenRefresh();
-      
+      /* control por fin de carrera */
+      checkEndstop();
       // refrescar valores de tiempo y volumen
       progressTime = (millis() - millisStartRuninng) / 1000.0;
       progressVolume = progressTime / totalTime * totalVolume;
       if (progressTime > totalTime) {
         stopPump();
+        digitalWrite(transmitterPin, messageSTOP);
         screen = scrVTEND;
+      }
+      if(digitalRead(receiverPin) == messageSTOP && isSlave){
+        stopPump();
+        isSlave = false; //slavery finished   
+        screen = scrVTSTOP;   
       }
       switch (lcd_key) {
         case btnSELECT:
+          digitalWrite(transmitterPin, messageSTOP);
           stopPump();
+          screen = scrVTSTOP;
           break;
       }
       break;
@@ -183,6 +199,8 @@ void loopValueVT() {
             // resetea los contadores de progreso
             progressTime = 0;
             progressVolume = 0;
+            // empieza a escuchar la orden de la otra bomba
+            //beginListeningStart();
             screen = scrVTPAUSE;
             flagProgressScreen = true;
             millisStartScreen = millis();
@@ -219,12 +237,12 @@ void loopValueVT() {
     auxValue = oldValue;
 
   switch (screen) {
-    case scrVTVOLUME: 
-      totalVolume = auxValue; 
+    case scrVTVOLUME:
+      totalVolume = auxValue;
       EEPROM.put(totalVolumeMEMLOC, totalVolume);
       break;
-    case scrVTTIME: 
-      totalTime = auxValue; 
+    case scrVTTIME:
+      totalTime = auxValue;
       EEPROM.put(totalTimeMEMLOC, totalTime);
       break;
   }
