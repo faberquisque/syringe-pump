@@ -22,19 +22,15 @@ void loopVT() {
           flagClearScreen = true;
           break;
         case btnRIGHT:
-          // comandos para iniciar operacion
-          // seleccionar direccion
-          digitalWrite(directionPin, directionFORWARD);
-          // enciende el oscilador
-          tone(pulsePin, frequency);
-          // habilita la corriente
-          digitalWrite(enablePin, currentENABLE);
-          // iniciar contador de tiempo
-          millisStartRuninng = millis();
+          digitalWrite(transmitterPin, messageSTART);
+          startPump();
           screen = scrVTRUNNING;
-          flagProgressScreen = true;
-          millisStartScreen = millis();
           break;
+      }
+      if(digitalRead(receiverPin) == messageSTART){
+        isSlave = true;
+        startPump();
+        screen = scrVTRUNNING;
       }
       break;
     case scrVTRUNNING:
@@ -45,24 +41,20 @@ void loopVT() {
       progressTime = (millis() - millisStartRuninng) / 1000.0;
       progressVolume = progressTime / totalTime * totalVolume;
       if (progressTime > totalTime) {
-        // procedimiento de detencion
-        noTone(pulsePin);
-        digitalWrite(enablePin, currentDISABLE);
+        stopPump();
+        digitalWrite(transmitterPin, messageSTOP);
         screen = scrVTEND;
-        flagProgressScreen = true;
-        millisStartScreen = millis();
+      }
+      if(digitalRead(receiverPin) == messageSTOP && isSlave){
+        stopPump();
+        isSlave = false; //slavery finished   
+        screen = scrVTSTOP;   
       }
       switch (lcd_key) {
         case btnSELECT:
-          // comandos para detener
-          // apaga el oscilador
-          noTone(pulsePin);
-          // apaga la corriente
-          digitalWrite(enablePin, currentDISABLE);
-
+          digitalWrite(transmitterPin, messageSTOP);
+          stopPump();
           screen = scrVTSTOP;
-          flagProgressScreen = true;
-          millisStartScreen = millis();
           break;
       }
       break;
@@ -187,8 +179,7 @@ void loopValueVT() {
           lcd.print("L");
           delay(msgDELAY);
           // recalcula los limites
-          minTotalTime = (float) totalVolume / maxFlowRate * 3600.;
-          maxTotalTime = (float) totalVolume / minFlowRate * 3600.;
+          updateLimits();
           screen = scrVTTIME;
           return;
           break;
@@ -196,9 +187,8 @@ void loopValueVT() {
         case scrVTTIME:
           if (totalTime > minTotalTime & totalTime < maxTotalTime) {
             // Establece la nueva frecuencia
-            frequency = (float)totalVolume * syringeLength / syringeVolume / totalTime * calibration / 1000;
-            actualFlowrate = frequency * 1000. / calibration / syringeLength * syringeVolume * 3600.0;
-            actualTotalTime = totalVolume / actualFlowrate;
+            frequency = flowRate2Frequency((float)totalVolume / ((float)totalTime / 3600.0));
+            updateActualFlowRate();
             //
             lcd.setCursor(0, 0);
             lcd.print("Time acepted:");
@@ -209,6 +199,8 @@ void loopValueVT() {
             // resetea los contadores de progreso
             progressTime = 0;
             progressVolume = 0;
+            // empieza a escuchar la orden de la otra bomba
+            //beginListeningStart();
             screen = scrVTPAUSE;
             flagProgressScreen = true;
             millisStartScreen = millis();
@@ -245,8 +237,14 @@ void loopValueVT() {
     auxValue = oldValue;
 
   switch (screen) {
-    case scrVTVOLUME: totalVolume = auxValue; break;
-    case scrVTTIME: totalTime = auxValue; break;
+    case scrVTVOLUME:
+      totalVolume = auxValue;
+      EEPROM.put(totalVolumeMEMLOC, totalVolume);
+      break;
+    case scrVTTIME:
+      totalTime = auxValue;
+      EEPROM.put(totalTimeMEMLOC, totalTime);
+      break;
   }
 }
 

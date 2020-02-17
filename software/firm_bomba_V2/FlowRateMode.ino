@@ -26,24 +26,33 @@ void loopFR() {
           screen = scrMAIN;
           break;
         case btnRIGHT:
-          // comandos para iniciar operacion
-          // seleccionar direccion
-          digitalWrite(directionPin, directionFORWARD);
-          // enciende el oscilador
-          tone(pulsePin, frequency);
-          // habilita la corriente
-          digitalWrite(enablePin, currentENABLE);
-          // iniciar contador de tiempo
-          millisStartRuninng = millis();
+          digitalWrite(transmitterPin, messageSTART);
+          startPump();
           screen = scrFRRUNNING;
-          flagProgressScreen = true;
-          millisStartScreen = millis();
           break;
+      }
+      if(digitalRead(receiverPin) == messageSTART){
+        isSlave = true;
+        startPump();
+        screen = scrFRRUNNING;
       }
       break;
     case scrFRRUNNING:
       /* control por fin de carrera */
       checkEndstop();
+      if(digitalRead(receiverPin) == messageSTOP && isSlave){
+        stopPump();
+        isSlave = false; //slavery finished        
+        lcd.clear();
+        lcd.setCursor(0, 0);
+        lcd.print("      FLOW      ");
+        lcd.setCursor(0, 1);
+        lcd.print("    STOPPED     ");
+        delay(msgDELAY);
+        // cambio de pantalla
+        screen = scrMAIN;
+        break;
+      }
       if ((millis() - millisStartScreen) > screenCHANGE) {
         millisStartScreen = millis();
         //rota la pantalla entre tres valores
@@ -53,10 +62,8 @@ void loopFR() {
       //
       switch (lcd_key) {
         case btnSELECT:
-          // detiene el motor: apaga el oscilador y apaga la corriente
-          noTone(pulsePin);
-          digitalWrite(enablePin, currentDISABLE);
-          // mensaje de salida
+          digitalWrite(transmitterPin, messageSTOP);
+          stopPump();
           lcd.clear();
           lcd.setCursor(0, 0);
           lcd.print("      FLOW      ");
@@ -75,6 +82,19 @@ void loopFR() {
     case scrFRFREQ:
       /* control por fin de carrera */
       checkEndstop();
+      if(digitalRead(receiverPin) == messageSTOP && isSlave){
+        stopPump();
+        isSlave = false; //slavery finished        
+        lcd.clear();
+        lcd.setCursor(0, 0);
+        lcd.print("      FLOW      ");
+        lcd.setCursor(0, 1);
+        lcd.print("    STOPPED     ");
+        delay(msgDELAY);
+        // cambio de pantalla
+        screen = scrMAIN;
+        break;
+      }
       loopValueFreq();
       break;
   }
@@ -117,14 +137,14 @@ void loopValueFreq() {
       if (frequency > MAX_FREQ or frequency < MIN_FREQ)
         frequency = oldValue;
       tone(pulsePin, frequency);
-      actualFlowrate = frequency * 1000. / calibration / syringeLength * syringeVolume * 3600.0;
+      updateActualFlowRate();
       break;
     case btnDOWN:
       frequency -= quanto;
       if (frequency > MAX_FREQ or frequency < MIN_FREQ)
         frequency = oldValue;
       tone(pulsePin, frequency);
-      actualFlowrate = frequency * 1000. / calibration / syringeLength * syringeVolume * 3600.0;
+      updateActualFlowRate();
       break;
   }
 }
@@ -154,8 +174,9 @@ void loopValueFR() {
       // esta en FRFLOWRATE y pasa a FRPAUSE
       if (flowrate >= minFlowRate & flowrate <= maxFlowRate) {
         //se establece la nueva frecuencia
-        frequency = (float)flowrate * syringeLength * calibration / syringeVolume / 3600. / 1000.;
-        actualFlowrate = frequency * 1000. / calibration / syringeLength * syringeVolume * 3600.0;
+        frequency = flowRate2Frequency((float)flowrate);
+        updateActualFlowRate();
+        EEPROM.put(flowrateMEMLOC, flowrate);
         // se da mensaje de aceptacion
         lcd.setCursor(0, 0);
         lcd.print("FlowRateAcepted:");
@@ -165,9 +186,11 @@ void loopValueFR() {
         lcd.write(228);
         lcd.print("L/h");
         delay(msgDELAY);
-        screen = scrFRPAUSE;
         screenRotation = 0;
         millisStartScreen = millis();
+        // empieza a escuchar la orden de la otra bomba
+//        beginListeningStart();
+        screen = scrFRPAUSE;
       }
       else {
         lcd.setCursor(0, 0);

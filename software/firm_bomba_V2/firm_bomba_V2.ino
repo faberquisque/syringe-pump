@@ -1,6 +1,6 @@
 /*  Firmware V2 de la bomba de jeringa  */
 /*-------------0123456789012345*/
-char firm[] = "Firm V2.0 251018";
+char firm[] = "Firm V2.0 20-11-2019";
 /*
    Historial:
 
@@ -24,6 +24,8 @@ char firm[] = "Firm V2.0 251018";
    Esto resulta util a los fines de calibrar el
    conjunto motor-reductor-eje-carro.
 */
+// Libreria para el manejo de la memoria EEPROM
+#include <EEPROM.h>
 // Libreria para el manejo de la pantalla
 #include <LiquidCrystal.h>
 LiquidCrystal lcd(8, 9, 4, 5, 6, 7);
@@ -33,12 +35,11 @@ LiquidCrystal lcd(8, 9, 4, 5, 6, 7);
 // Variables internas para manejar el motor
 //---------------------------------------------------------
 // Frecuencia de la onda cuadrada, funcion tone()
-unsigned int frequency = 1727; // Hz
+unsigned long frequency = 1727; // Hz
 // minimo debido al metodo de generacion
 #define MIN_FREQ 31
 // maxima velocidad para que no patine el motor
-//#define MAX_FREQ 12500
-#define MAX_FREQ 25000
+#define MAX_FREQ 12500
 
 /* Calibracion entre pulsos y avance del carro
    1 periodo / 1 pulso
@@ -51,12 +52,7 @@ unsigned int frequency = 1727; // Hz
 // Medido experimentalmente con regla/calibre 21440+/-10
 // pulsos por mm (incertidumbre en la cuarta cifra)
 //unsigned long calibration = 21440;
-unsigned long calibration = 21374;
-
-//This software has been developed by Emanuel Elizalde
-//---------------------------------------------------------
-// Variables consignas del usuario
-//---------------------------------------------------------
+unsigned long calibration = 20358;
 // Calibracion: largo de la jeringa en micrones
 unsigned long syringeLength  = 45252;
 // Calibracion: volumen total de la jeringa en microlitros
@@ -66,6 +62,27 @@ unsigned long flowrate = 2000; // microlitros/hora
 // Volumen/Tiempo consigna - modo volume-time
 unsigned long totalVolume = 63; // microlitros
 unsigned long totalTime = 45; // segundos
+
+// Memory Locations
+const int calibrationMEMLOC = 0;
+const int syringeLengthMEMLOC = calibrationMEMLOC + sizeof(calibration);
+const int syringeVolumeMEMLOC = syringeLengthMEMLOC + sizeof(syringeLength);
+const int flowrateMEMLOC = syringeVolumeMEMLOC + sizeof(syringeVolume);
+const int totalVolumeMEMLOC = flowrateMEMLOC + sizeof(flowrate);
+const int totalTimeMEMLOC = totalVolumeMEMLOC + sizeof(totalVolume);
+
+// Lee la configuracion de la memoria EEPROM
+void readConfig(){
+  if (EEPROM.get(calibrationMEMLOC,calibration) != 0xFFFFFFFF)
+  {
+    EEPROM.get(calibrationMEMLOC, calibration);
+    EEPROM.get(syringeLengthMEMLOC, syringeLength);
+    EEPROM.get(syringeVolumeMEMLOC, syringeVolume);
+    EEPROM.get(flowrateMEMLOC, flowrate);
+    EEPROM.get(totalVolumeMEMLOC, totalVolume);
+    EEPROM.get(totalTimeMEMLOC, totalTime);
+  }
+}
 
 /* Calculo de la frecuencia
     Modo FlowRate:
@@ -79,14 +96,27 @@ unsigned long totalTime = 45; // segundos
       frequency = velocity*calibration/1000
       flowrate=totalVolume/totalTime
 */
-float minFlowRate = MIN_FREQ * 1000. / calibration * 3600.*syringeVolume / syringeLength;
-// minFlowRate 89 microlitros / hora
-float maxFlowRate = MAX_FREQ * 1000. / calibration * 3600.*syringeVolume / syringeLength;
-// maxFlowRate 28950 microlitros / hora
-float minTotalTime = totalVolume / maxFlowRate * 3600;
-// minTotalTime 62 seg  (500 microlitros)
-float maxTotalTime = totalVolume / minFlowRate * 3600;
-// maxTotalTime 20224 seg (500 microlitros)
+
+float frequency2FlowRate(unsigned long value){
+  return (float)((float)value / calibration / syringeLength * syringeVolume * 3600.0 * 1000.0);
+}
+
+unsigned long flowRate2Frequency(float value){
+  return (unsigned long)(value * calibration * syringeLength / syringeVolume / 3600.0 / 1000.0);
+}
+
+// limites de caudal en base a los limites de frecuencia
+float minFlowRate = 0.0;
+float maxFlowRate = 10000.0;
+float minTotalTime = 0.0;
+float maxTotalTime = 10000.0;
+
+void updateLimits(){
+  minFlowRate = frequency2FlowRate(MIN_FREQ);
+  maxFlowRate = frequency2FlowRate(MAX_FREQ);
+  minTotalTime = totalVolume / maxFlowRate * 3600.0;
+  maxTotalTime = totalVolume / minFlowRate * 3600.0;
+}
 
 //---------------------------------------------------------
 // Valores reales y contadores de operacion
@@ -96,8 +126,15 @@ float maxTotalTime = totalVolume / minFlowRate * 3600;
     Por este redondeo las variables reales van a diferir
     levemente de las consignas.
 */
-float actualFlowrate = frequency * 1000. / calibration / syringeLength * syringeVolume * 3600.0;
-float actualTotalTime = totalVolume / actualFlowrate;
+
+float actualFlowrate; // = frequency * 1000. / calibration / syringeLength * syringeVolume * 3600.0;
+float actualTotalTime; // = totalVolume / actualFlowrate;
+
+void updateActualFlowRate(){
+  actualFlowrate = frequency2FlowRate(frequency);
+  actualTotalTime = totalVolume / actualFlowrate;
+}
+
 // Volumen/Tiempo acumulados en el modo VT
 float progressVolume = 0; // microlitros
 float progressTime = 0; // segundos
@@ -189,14 +226,30 @@ unsigned int freqStair;
 // Variable que cuenta el tiempo desde el RUN
 unsigned long millisStartRuninng;
 
+
+//---------------------------------------------------------
+// Comunicacion entre bombas
+//---------------------------------------------------------
+const int transmitterPin = 50;   // TX 
+const int receiverPin = 52;      // RX
+bool isSlave = false;
+#define messageSTART LOW
+#define messageSTOP HIGH
+
 //---------------------------------------------------------
 // Variables para el modo Serial
 //---------------------------------------------------------
-#define delaySTEPSSERIAL 20
+#define delaySTEPSSERIAL 25
 bool flagEndstopSerial = false;
 bool flagNumberSteps = false;
+bool flagNewCalibration = false;
 
 void setup() {
+  // Restablece la configuracion
+  readConfig();
+  // Actualiza los parametros calculados
+  updateActualFlowRate();
+  updateLimits();
   // inicia los pines de control del driver
   pinMode(pulsePin, OUTPUT);
   pinMode(directionPin, OUTPUT);
@@ -205,6 +258,11 @@ void setup() {
   pinMode(endstopPin, INPUT);
   // apaga la corriente al motor
   digitalWrite(enablePin, currentDISABLE);
+
+  //inicia los pines de comunicacion entre bombas
+  pinMode(transmitterPin, OUTPUT);
+  pinMode(receiverPin, INPUT_PULLUP);
+  digitalWrite(transmitterPin, messageSTOP);
 
   // Inicializar el LCD
   lcd.begin(16, 2);
@@ -443,13 +501,46 @@ void printMain() {
 
 void checkEndstop() {
   if (digitalRead(endstopPin) == endstopPRESSED) {
-    noTone(pulsePin);
-    digitalWrite(enablePin, currentDISABLE);
+    stopPump();
+    digitalWrite(transmitterPin, messageSTOP);
     screen = scrENDSTOP;
     lcd.noBlink();
-    screenRotation = 0;
-    flagClearScreen = true;
-    millisStartScreen = millis();
-    printScreen();
   }
 }
+void startPump(){
+  // comandos para iniciar operacion
+  // seleccionar direccion
+  digitalWrite(directionPin, directionFORWARD);
+  // enciende el oscilador
+  tone(pulsePin, frequency);
+  // habilita la corriente
+  digitalWrite(enablePin, currentENABLE);
+  // iniciar contador de tiempo
+  millisStartRuninng = millis();
+  millisStartScreen = millis();
+  flagProgressScreen = true;
+}
+
+void stopPump(){
+  noTone(pulsePin);
+  digitalWrite(enablePin, currentDISABLE);
+  millisStartScreen = millis();
+  flagProgressScreen = true;
+  screenRotation = 0;
+}
+
+// void Message(){
+//   lcd_key = btnMESSAGE;
+// }
+
+// void beginListeningStart(){
+//   attachInterrupt(digitalPinToInterrupt(receiverPin), Message, messageSTART);
+// }
+
+// void beginListentingStop(){
+//   attachInterrupt(digitalPinToInterrupt(receiverPin), Message, messageSTOP);
+// }
+
+// void stopListening(){
+//   detachInterrupt(digitalPinToInterrupt(receiverPin));
+// }

@@ -43,7 +43,6 @@ void loopCal() {
           lcd.setCursor(0, 0);
           lcd.print("Volume Selected");
           delay(msgDELAY);
-          recalculateLimits();
           screen = scrMAIN;
           break;
       }
@@ -67,8 +66,16 @@ void loopCal() {
     auxValue = oldValue;
 
   switch (screen) {
-    case scrCALLENGTH: syringeLength = auxValue; break;
-    case scrCALVOLUME: syringeVolume = auxValue; break;
+    case scrCALLENGTH: 
+      syringeLength = auxValue; 
+      EEPROM.put(syringeLengthMEMLOC, syringeLength);
+      updateLimits();
+      break;
+    case scrCALVOLUME: 
+      syringeVolume = auxValue; 
+      EEPROM.put(syringeVolumeMEMLOC, syringeVolume);
+      updateLimits();
+      break;
   }
 }
 
@@ -104,8 +111,4 @@ void printCalVolume() {
   lcd.print("L");
 }
 
-// calcula los limites de caudal en base a los limites de frecuencia
-void recalculateLimits(){
-  minFlowRate=MIN_FREQ*1000./calibration*3600.*syringeVolume/syringeLength;
-  maxFlowRate=MAX_FREQ*1000./calibration*3600.*syringeVolume/syringeLength;
-}
+
